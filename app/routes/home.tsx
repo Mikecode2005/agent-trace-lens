@@ -22,40 +22,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~
 import { Separator } from "~/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "~/components/ui/table";
 import type { Route } from "./+types/home";
+import { durationSeries, filterSpans, sampleSpans, summarizeSpans, type SpanStatus } from "~/lib/trace-data";
 
-type SpanStatus = "ok" | "error" | "running";
-type TraceSpan = {
-  id: string;
-  traceId: string;
-  name: string;
-  service: string;
-  kind: string;
-  status: SpanStatus;
-  duration: number;
-  start: string;
-  tokens: number;
-  cost: number;
-  detail: string;
-};
-
-// Deliberately labeled sample data: the dashboard is ready for OTLP ingestion, but no live source is connected yet.
-const sampleSpans: TraceSpan[] = [
-  { id: "sp_01", traceId: "tr_7f91", name: "customer_support_agent", service: "support-agent", kind: "agent", status: "ok", duration: 1840, start: "09:42:18.104", tokens: 2840, cost: 0.018, detail: "Classified request and selected search_documents" },
-  { id: "sp_02", traceId: "tr_7f91", name: "search_documents", service: "mcp-server", kind: "tool", status: "ok", duration: 312, start: "09:42:19.021", tokens: 0, cost: 0, detail: "Returned 4 matching knowledge-base documents" },
-  { id: "sp_03", traceId: "tr_b8c2", name: "invoice_reconciliation", service: "finance-agent", kind: "agent", status: "error", duration: 2680, start: "09:41:52.840", tokens: 4210, cost: 0.027, detail: "Tool timeout after 3 retries" },
-  { id: "sp_04", traceId: "tr_b8c2", name: "fetch_invoice", service: "erp-mcp", kind: "tool", status: "error", duration: 2510, start: "09:41:53.010", tokens: 0, cost: 0, detail: "Upstream response exceeded 2s timeout" },
-  { id: "sp_05", traceId: "tr_4a11", name: "release_notes_writer", service: "docs-agent", kind: "agent", status: "ok", duration: 940, start: "09:40:41.220", tokens: 1760, cost: 0.011, detail: "Drafted release summary from 12 commits" },
-  { id: "sp_06", traceId: "tr_4a11", name: "get_commits", service: "github-mcp", kind: "tool", status: "ok", duration: 144, start: "09:40:41.401", tokens: 0, cost: 0, detail: "Read 12 commits from the default branch" },
-  { id: "sp_07", traceId: "tr_229d", name: "onboarding_copilot", service: "onboarding-agent", kind: "agent", status: "running", duration: 2210, start: "09:39:10.771", tokens: 3290, cost: 0.021, detail: "Waiting for create_workspace confirmation" },
-  { id: "sp_08", traceId: "tr_229d", name: "lookup_workspace", service: "workspace-mcp", kind: "tool", status: "ok", duration: 186, start: "09:39:11.022", tokens: 0, cost: 0, detail: "Found workspace configuration" },
-];
-
-const durationSeries = [
-  { time: "09:35", p50: 620, p95: 1610 }, { time: "09:36", p50: 710, p95: 1890 },
-  { time: "09:37", p50: 580, p95: 1420 }, { time: "09:38", p50: 860, p95: 2240 },
-  { time: "09:39", p50: 740, p95: 2110 }, { time: "09:40", p50: 680, p95: 1760 },
-  { time: "09:41", p50: 920, p95: 2680 }, { time: "09:42", p50: 650, p95: 1840 },
-];
 const chartConfig = {
   p50: { label: "p50 duration", color: "var(--color-primary)" },
   p95: { label: "p95 duration", color: "#f59e0b" },
@@ -63,16 +31,11 @@ const chartConfig = {
 
 export function loader({ request }: Route.LoaderArgs) {
   const params = new URL(request.url).searchParams;
-  const query = (params.get("q") ?? "").trim().toLowerCase();
+  const query = params.get("q") ?? "";
   const status = params.get("status") ?? "all";
   const service = params.get("service") ?? "all";
-  const spans = sampleSpans.filter((span) => {
-    const matchesQuery = !query || [span.name, span.service, span.detail].join(" ").toLowerCase().includes(query);
-    const matchesStatus = status === "all" || span.status === status;
-    const matchesService = service === "all" || span.service === service;
-    return matchesQuery && matchesStatus && matchesService;
-  });
-  return { spans, query, status, service, mode: "sample", generatedAt: "2026-08-31T09:43:00Z" };
+  const spans = filterSpans(sampleSpans, { query, status, service });
+  return { spans, query, status, service, focusedTrace: params.get("trace"), mode: "sample", generatedAt: "2026-08-31T09:43:00Z" };
 }
 
 export function meta() {
@@ -89,9 +52,11 @@ function StatusBadge({ status }: { status: SpanStatus }) {
 }
 
 export default function Home() {
-  const { spans, query, status, service, mode, generatedAt } = useLoaderData<typeof loader>();
-  const totalTokens = spans.reduce((sum, span) => sum + span.tokens, 0);
-  const visibleErrors = spans.filter((span) => span.status === "error").length;
+  const { spans, query, status, service, focusedTrace, mode, generatedAt } = useLoaderData<typeof loader>();
+  const summary = summarizeSpans(spans);
+  const focusedSpans = focusedTrace ? sampleSpans.filter((span) => span.traceId === focusedTrace) : [];
+  const totalTokens = summary.tokens;
+  const visibleErrors = summary.errors;
   const services = [...new Set(sampleSpans.map((span) => span.service))];
 
   return (
@@ -103,7 +68,7 @@ export default function Home() {
             <h1 className="font-display text-4xl font-semibold tracking-[-0.05em] text-slate-950 sm:text-5xl">See what your agents <span className="text-emerald-700">actually did.</span></h1>
             <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">A local-first observability lens for AI agents and MCP tools. Follow the handoff from model call to tool result, then find the latency and failure that changed the outcome.</p>
           </div>
-          <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm"><Badge variant="outline" className="gap-1.5 px-3 py-1.5 text-amber-700"><span className="size-2 rounded-full bg-amber-500" /> Sample dataset</Badge><Button variant="outline" size="sm"><Download className="size-4" /> Export traces</Button></div>
+          <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm"><Badge variant="outline" className="gap-1.5 px-3 py-1.5 text-amber-700"><span className="size-2 rounded-full bg-amber-500" /> Sample dataset</Badge><Button asChild variant="outline" size="sm"><a href="/api/traces"><Download className="size-4" /> Export traces</a></Button></div>
         </header>
 
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Trace metrics">
@@ -115,10 +80,11 @@ export default function Home() {
 
         <section className="grid gap-6 xl:grid-cols-[1.6fr_1fr]">
           <Card className="border-slate-200 bg-white shadow-sm"><CardHeader><div className="flex items-start justify-between gap-4"><div><CardTitle className="flex items-center gap-2 text-lg"><Clock3 className="size-5 text-emerald-700" /> Latency by percentile</CardTitle><CardDescription>Agent and tool spans · last 10 minutes · milliseconds</CardDescription></div><Badge variant="outline">OTLP-ready</Badge></div></CardHeader><CardContent><ChartContainer config={chartConfig} className="h-[280px] w-full"><AreaChart accessibilityLayer data={durationSeries} margin={{ left: 0, right: 12, top: 12 }}><defs><linearGradient id="p50Fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--color-p50)" stopOpacity={0.24} /><stop offset="100%" stopColor="var(--color-p50)" stopOpacity={0} /></linearGradient><linearGradient id="p95Fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#f59e0b" stopOpacity={0.18} /><stop offset="100%" stopColor="#f59e0b" stopOpacity={0} /></linearGradient></defs><CartesianGrid vertical={false} strokeDasharray="4 4" /><XAxis dataKey="time" tickLine={false} axisLine={false} tickMargin={10} /><YAxis tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => `${value}ms`} width={52} /><ChartTooltip content={<ChartTooltipContent />} /><Area type="monotone" dataKey="p95" stroke="#f59e0b" fill="url(#p95Fill)" strokeWidth={2} /><Area type="monotone" dataKey="p50" stroke="var(--color-p50)" fill="url(#p50Fill)" strokeWidth={2} /></AreaChart></ChartContainer></CardContent></Card>
-          <Card className="border-slate-200 bg-slate-950 text-white shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Sparkles className="size-5 text-emerald-300" /> Lens summary</CardTitle><CardDescription className="text-slate-400">A human-readable starting point for your next investigation.</CardDescription></CardHeader><CardContent className="space-y-5"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Primary signal</p><p className="mt-2 text-xl font-semibold">The ERP tool timeout drives the p95 spike.</p></div><Separator className="bg-slate-800" /><div className="space-y-3 text-sm text-slate-300"><p className="flex gap-2"><span className="mt-1.5 size-2 shrink-0 rounded-full bg-amber-400" /> 2.51s spent waiting for fetch_invoice.</p><p className="flex gap-2"><span className="mt-1.5 size-2 shrink-0 rounded-full bg-emerald-400" /> Search and GitHub tools completed under 320ms.</p><p className="flex gap-2"><span className="mt-1.5 size-2 shrink-0 rounded-full bg-sky-400" /> 3.2k tokens were used by the failing agent trace.</p></div><Button className="w-full bg-emerald-400 text-slate-950 hover:bg-emerald-300">Open investigation view <Eye className="size-4" /></Button></CardContent></Card>
+          <Card className="border-slate-200 bg-slate-950 text-white shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Sparkles className="size-5 text-emerald-300" /> Lens summary</CardTitle><CardDescription className="text-slate-400">A human-readable starting point for your next investigation.</CardDescription></CardHeader><CardContent className="space-y-5"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Primary signal</p><p className="mt-2 text-xl font-semibold">The ERP tool timeout drives the p95 spike.</p></div><Separator className="bg-slate-800" /><div className="space-y-3 text-sm text-slate-300"><p className="flex gap-2"><span className="mt-1.5 size-2 shrink-0 rounded-full bg-amber-400" /> 2.51s spent waiting for fetch_invoice.</p><p className="flex gap-2"><span className="mt-1.5 size-2 shrink-0 rounded-full bg-emerald-400" /> Search and GitHub tools completed under 320ms.</p><p className="flex gap-2"><span className="mt-1.5 size-2 shrink-0 rounded-full bg-sky-400" /> 3.2k tokens were used by the failing agent trace.</p></div><Button asChild className="w-full bg-emerald-400 text-slate-950 hover:bg-emerald-300"><a href="#spans">Open investigation view <Eye className="size-4" /></a></Button></CardContent></Card>
         </section>
 
-        <Card className="border-slate-200 bg-white shadow-sm"><CardHeader><div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end"><div><CardTitle className="text-lg">Recent spans</CardTitle><CardDescription>Filter model and tool activity by service, status, or trace detail.</CardDescription></div><Form method="get" className="flex flex-col gap-2 sm:flex-row sm:items-end"><div className="relative"><Label htmlFor="q" className="sr-only">Search spans</Label><Search className="absolute left-3 top-2.5 size-4 text-slate-400" /><Input id="q" name="q" defaultValue={query} placeholder="Search traces..." className="w-full pl-9 sm:w-56" /></div><div><Label htmlFor="status" className="sr-only">Status</Label><Select name="status" defaultValue={status}><SelectTrigger id="status" className="w-full sm:w-32"><SelectValue placeholder="Status" /></SelectTrigger><SelectContent><SelectItem value="all">All status</SelectItem><SelectItem value="ok">OK</SelectItem><SelectItem value="error">Error</SelectItem><SelectItem value="running">Running</SelectItem></SelectContent></Select></div><div><Label htmlFor="service" className="sr-only">Service</Label><Select name="service" defaultValue={service}><SelectTrigger id="service" className="w-full sm:w-44"><SelectValue placeholder="Service" /></SelectTrigger><SelectContent><SelectItem value="all">All services</SelectItem>{services.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></div><Button type="submit" variant="outline"><Filter className="size-4" /> Filter</Button></Form></div></CardHeader><CardContent><div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Span / trace</TableHead><TableHead>Service</TableHead><TableHead>Type</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Duration</TableHead><TableHead className="text-right">Tokens</TableHead><TableHead className="text-right">Cost</TableHead></TableRow></TableHeader><TableBody>{spans.map((span) => <TableRow key={span.id} className="group"><TableCell><div className="min-w-64"><p className="font-medium text-slate-900">{span.name}</p><p className="mt-1 text-xs text-slate-500">{span.traceId} · {span.detail}</p></div></TableCell><TableCell className="font-mono text-xs text-slate-600">{span.service}</TableCell><TableCell><Badge variant="secondary" className="font-normal">{span.kind}</Badge></TableCell><TableCell><StatusBadge status={span.status} /></TableCell><TableCell className="text-right font-mono text-xs">{span.duration.toLocaleString()}ms</TableCell><TableCell className="text-right font-mono text-xs">{span.tokens ? span.tokens.toLocaleString() : "—"}</TableCell><TableCell className="text-right font-mono text-xs">{span.cost ? `$${span.cost.toFixed(3)}` : "—"}</TableCell></TableRow>)}{spans.length === 0 && <TableRow><TableCell colSpan={7} className="h-24 text-center text-slate-500">No spans match these filters.</TableCell></TableRow>}</TableBody></Table></div></CardContent></Card>
+        <Card id="spans" className="border-slate-200 bg-white shadow-sm"><CardHeader><div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end"><div><CardTitle className="text-lg">Recent spans</CardTitle><CardDescription>Filter model and tool activity by service, status, or trace detail.</CardDescription></div><Form method="get" className="flex flex-col gap-2 sm:flex-row sm:items-end"><div className="relative"><Label htmlFor="q" className="sr-only">Search spans</Label><Search className="absolute left-3 top-2.5 size-4 text-slate-400" /><Input id="q" name="q" defaultValue={query} placeholder="Search traces..." className="w-full pl-9 sm:w-56" /></div><div><Label htmlFor="status" className="sr-only">Status</Label><Select name="status" defaultValue={status}><SelectTrigger id="status" className="w-full sm:w-32"><SelectValue placeholder="Status" /></SelectTrigger><SelectContent><SelectItem value="all">All status</SelectItem><SelectItem value="ok">OK</SelectItem><SelectItem value="error">Error</SelectItem><SelectItem value="running">Running</SelectItem></SelectContent></Select></div><div><Label htmlFor="service" className="sr-only">Service</Label><Select name="service" defaultValue={service}><SelectTrigger id="service" className="w-full sm:w-44"><SelectValue placeholder="Service" /></SelectTrigger><SelectContent><SelectItem value="all">All services</SelectItem>{services.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent></Select></div><Button type="submit" variant="outline"><Filter className="size-4" /> Filter</Button></Form></div></CardHeader><CardContent><div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Span / trace</TableHead><TableHead>Service</TableHead><TableHead>Type</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Duration</TableHead><TableHead className="text-right">Tokens</TableHead><TableHead className="text-right">Cost</TableHead></TableRow></TableHeader><TableBody>{spans.map((span) => <TableRow key={span.id} className="group"><TableCell><div className="min-w-64"><a href={`?trace=${span.traceId}#span-details`} className="font-medium text-slate-900 underline-offset-4 hover:text-emerald-700 hover:underline">{span.name}</a><p className="mt-1 text-xs text-slate-500">{span.traceId} · {span.detail}</p></div></TableCell><TableCell className="font-mono text-xs text-slate-600">{span.service}</TableCell><TableCell><Badge variant="secondary" className="font-normal">{span.kind}</Badge></TableCell><TableCell><StatusBadge status={span.status} /></TableCell><TableCell className="text-right font-mono text-xs">{span.duration.toLocaleString()}ms</TableCell><TableCell className="text-right font-mono text-xs">{span.tokens ? span.tokens.toLocaleString() : "—"}</TableCell><TableCell className="text-right font-mono text-xs">{span.cost ? `$${span.cost.toFixed(3)}` : "—"}</TableCell></TableRow>)}{spans.length === 0 && <TableRow><TableCell colSpan={7} className="h-24 text-center text-slate-500">No spans match these filters.</TableCell></TableRow>}</TableBody></Table></div></CardContent></Card>
+        {focusedTrace && <Card id="span-details" className="border-emerald-200 bg-emerald-50/50 shadow-sm"><CardHeader><div className="flex items-start justify-between gap-4"><div><CardTitle className="text-lg">Trace investigation · {focusedTrace}</CardTitle><CardDescription>{focusedSpans.length} span(s) in this trace · sample data</CardDescription></div><Button asChild variant="ghost" size="sm"><a href="#spans">Clear focus</a></Button></div></CardHeader><CardContent><div className="grid gap-3 md:grid-cols-2">{focusedSpans.map((span) => <div key={span.id} className="rounded-xl border border-emerald-100 bg-white p-4"><div className="flex items-center justify-between gap-3"><p className="font-medium">{span.name}</p><StatusBadge status={span.status} /></div><p className="mt-2 text-sm text-slate-600">{span.detail}</p><div className="mt-3 flex gap-4 font-mono text-xs text-slate-500"><span>{span.duration}ms</span><span>{span.tokens.toLocaleString()} tokens</span><span>{span.start} UTC</span></div></div>)}</div></CardContent></Card>}
         <footer className="flex flex-col justify-between gap-2 border-t border-slate-200 pt-4 text-xs text-slate-500 sm:flex-row"><span>Mode: {mode} · refreshed {generatedAt.replace("T", " ").replace("Z", " UTC")}</span><span>Local-first by default · OpenTelemetry ingestion planned</span></footer>
       </div>
     </main>
