@@ -1,0 +1,18 @@
+{
+  "resource": {
+    "attributes": [
+      {
+        "key": "service.name",
+        "value": {
+          "stringValue": "sample-agent"
+        }
+      },
+      {
+        "key": "deployment.environment",
+        "value": {
+          "stringValue": "fixture"
+        }
+      }
+    ]
+  }
+}
