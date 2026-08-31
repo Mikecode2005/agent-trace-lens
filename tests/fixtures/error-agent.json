@@ -1,0 +1,11 @@
+{
+  "traceId": "tr_test_error",
+  "name": "error_agent",
+  "service": "agent",
+  "kind": "agent",
+  "status": "error",
+  "duration": 1000,
+  "tokens": 80,
+  "cost": 0.002,
+  "detail": "synthetic failure"
+}
