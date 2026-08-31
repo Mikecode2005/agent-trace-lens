@@ -1,0 +1,32 @@
+{
+  "mode": "sample",
+  "generatedAt": "2026-08-31T09:43:00Z",
+  "spans": [
+    {
+      "id": "sp_demo_2",
+      "traceId": "tr_multi",
+      "name": "agent",
+      "service": "agent",
+      "kind": "agent",
+      "status": "ok",
+      "duration": 800,
+      "start": "09:01:00.000",
+      "tokens": 1200,
+      "cost": 0.008,
+      "detail": "Selected a tool"
+    },
+    {
+      "id": "sp_demo_3",
+      "traceId": "tr_multi",
+      "name": "tool",
+      "service": "mcp",
+      "kind": "tool",
+      "status": "ok",
+      "duration": 180,
+      "start": "09:01:00.400",
+      "tokens": 0,
+      "cost": 0,
+      "detail": "Returned synthetic data"
+    }
+  ]
+}
