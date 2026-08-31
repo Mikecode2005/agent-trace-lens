@@ -1,0 +1,10 @@
+{
+  "traceId": "tr_test_ok",
+  "name": "ok_agent",
+  "service": "agent",
+  "kind": "agent",
+  "status": "ok",
+  "duration": 100,
+  "tokens": 40,
+  "cost": 0.001
+}
