@@ -1,0 +1,10 @@
+{
+  "traceId": "tr_test_unknown",
+  "name": "unknown_status",
+  "service": "agent",
+  "kind": "agent",
+  "status": "unknown",
+  "duration": 100,
+  "tokens": 20,
+  "cost": 0.001
+}
