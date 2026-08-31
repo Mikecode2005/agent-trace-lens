@@ -1,0 +1,9 @@
+{
+  "traceId": "tr_test_missing_service",
+  "name": "missing_service",
+  "kind": "agent",
+  "status": "ok",
+  "duration": 100,
+  "tokens": 20,
+  "cost": 0.001
+}
