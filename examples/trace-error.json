@@ -1,0 +1,19 @@
+{
+  "mode": "sample",
+  "generatedAt": "2026-08-31T09:43:00Z",
+  "spans": [
+    {
+      "id": "sp_error",
+      "traceId": "tr_error",
+      "name": "timeout_tool",
+      "service": "mcp",
+      "kind": "tool",
+      "status": "error",
+      "duration": 2500,
+      "start": "09:02:00.000",
+      "tokens": 0,
+      "cost": 0,
+      "detail": "Synthetic timeout after retry budget"
+    }
+  ]
+}
