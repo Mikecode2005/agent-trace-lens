@@ -1,0 +1,10 @@
+{
+  "traceId": "tr_test_running",
+  "name": "running_agent",
+  "service": "agent",
+  "kind": "agent",
+  "status": "running",
+  "duration": 500,
+  "tokens": 20,
+  "cost": 0.001
+}
