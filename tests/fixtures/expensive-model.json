@@ -1,0 +1,10 @@
+{
+  "traceId": "tr_test_expensive",
+  "name": "expensive_model",
+  "service": "agent",
+  "kind": "model",
+  "status": "ok",
+  "duration": 3000,
+  "tokens": 50000,
+  "cost": 2.5
+}
