@@ -1,0 +1,22 @@
+{
+  "mode": "sample",
+  "generatedAt": "2026-08-31T09:43:00Z",
+  "spans": [
+    {
+      "id": "sp_cost",
+      "traceId": "tr_cost",
+      "name": "reasoning_agent",
+      "service": "agent",
+      "kind": "model",
+      "status": "ok",
+      "duration": 1900,
+      "start": "09:06:00.000",
+      "tokens": 12000,
+      "cost": 0.18,
+      "detail": "Synthetic high-cost model call",
+      "attributes": {
+        "model": "sample-model"
+      }
+    }
+  ]
+}
