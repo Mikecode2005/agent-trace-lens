@@ -1,0 +1,26 @@
+{
+  "mode": "sample",
+  "generatedAt": "2026-08-31T09:43:00Z",
+  "redaction": {
+    "policy": "fixture-only",
+    "fields": [
+      "attributes.prompt",
+      "attributes.toolArguments"
+    ]
+  },
+  "spans": [
+    {
+      "id": "sp_redacted",
+      "traceId": "tr_redacted",
+      "name": "private_tool",
+      "service": "mcp",
+      "kind": "tool",
+      "status": "ok",
+      "duration": 240,
+      "start": "09:07:00.000",
+      "tokens": 0,
+      "cost": 0,
+      "detail": "Synthetic redacted result"
+    }
+  ]
+}
