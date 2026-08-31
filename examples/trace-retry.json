@@ -1,0 +1,22 @@
+{
+  "mode": "sample",
+  "generatedAt": "2026-08-31T09:43:00Z",
+  "spans": [
+    {
+      "id": "sp_retry",
+      "traceId": "tr_retry",
+      "name": "retrying_tool",
+      "service": "mcp",
+      "kind": "tool",
+      "status": "error",
+      "duration": 3100,
+      "start": "09:05:00.000",
+      "tokens": 0,
+      "cost": 0,
+      "detail": "Three synthetic attempts before timeout",
+      "attributes": {
+        "retryCount": 3
+      }
+    }
+  ]
+}
