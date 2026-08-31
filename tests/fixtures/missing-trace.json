@@ -1,0 +1,10 @@
+{
+  "id": "orphan",
+  "name": "orphan_span",
+  "service": "agent",
+  "kind": "agent",
+  "status": "ok",
+  "duration": 100,
+  "tokens": 20,
+  "cost": 0.001
+}
