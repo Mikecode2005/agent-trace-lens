@@ -1,0 +1,12 @@
+{
+  "status": {
+    "code": 2,
+    "message": "synthetic tool timeout"
+  },
+  "events": [
+    {
+      "name": "exception",
+      "timeUnixNano": "1725000000200000000"
+    }
+  ]
+}
