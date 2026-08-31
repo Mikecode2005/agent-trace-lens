@@ -1,0 +1,20 @@
+{
+  "mode": "delayed",
+  "generatedAt": "2026-08-31T09:43:00Z",
+  "capturedAt": "2026-08-31T09:35:00Z",
+  "spans": [
+    {
+      "id": "sp_delayed",
+      "traceId": "tr_delayed",
+      "name": "delayed_agent",
+      "service": "agent",
+      "kind": "agent",
+      "status": "ok",
+      "duration": 700,
+      "start": "09:08:00.000",
+      "tokens": 800,
+      "cost": 0.005,
+      "detail": "Synthetic delayed telemetry"
+    }
+  ]
+}
