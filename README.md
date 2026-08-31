@@ -27,6 +27,8 @@ Trace Lens is designed around that investigation loop:
 - Latency chart with p50 and p95 lines.
 - Human-readable lens summary for the current outlier.
 - Filterable span table by search, service, and status.
+- Click-through trace focus view for related spans.
+- JSON export endpoint at `/api/traces` for the current sample contract.
 - Explicit sample mode labeling and freshness metadata.
 - Responsive UI built with React Router, Tailwind, shadcn-style primitives, and Recharts.
 
