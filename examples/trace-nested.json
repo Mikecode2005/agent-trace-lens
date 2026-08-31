@@ -1,0 +1,35 @@
+{
+  "mode": "sample",
+  "generatedAt": "2026-08-31T09:43:00Z",
+  "spans": [
+    {
+      "id": "sp_parent",
+      "traceId": "tr_nested",
+      "name": "parent_agent",
+      "service": "agent",
+      "kind": "agent",
+      "status": "ok",
+      "duration": 600,
+      "start": "09:04:00.000",
+      "tokens": 500,
+      "cost": 0.003,
+      "detail": "Parent synthetic span",
+      "children": [
+        {
+          "id": "sp_child",
+          "traceId": "tr_nested",
+          "parentId": "sp_parent",
+          "name": "nested_tool",
+          "service": "mcp",
+          "kind": "tool",
+          "status": "ok",
+          "duration": 120,
+          "start": "09:04:00.200",
+          "tokens": 0,
+          "cost": 0,
+          "detail": "Nested synthetic span"
+        }
+      ]
+    }
+  ]
+}
