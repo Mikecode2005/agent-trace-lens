@@ -1,0 +1,16 @@
+{
+  "traceId": "AAAAAAAAAAAAAAAAAAAAAA==",
+  "spanId": "AQIDBAUGBwg=",
+  "name": "sample.tool",
+  "kind": 2,
+  "startTimeUnixNano": "1725000000000000000",
+  "endTimeUnixNano": "1725000000200000000",
+  "attributes": [
+    {
+      "key": "mcp.tool.name",
+      "value": {
+        "stringValue": "search"
+      }
+    }
+  ]
+}
