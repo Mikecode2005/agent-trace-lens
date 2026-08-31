@@ -1,0 +1,19 @@
+{
+  "mode": "sample",
+  "generatedAt": "2026-08-31T09:43:00Z",
+  "spans": [
+    {
+      "id": "sp_running",
+      "traceId": "tr_running",
+      "name": "approval_agent",
+      "service": "agent",
+      "kind": "agent",
+      "status": "running",
+      "duration": 1200,
+      "start": "09:03:00.000",
+      "tokens": 900,
+      "cost": 0.006,
+      "detail": "Waiting for a synthetic approval"
+    }
+  ]
+}
