@@ -13,15 +13,5 @@ jobs:
         with:
           bun-version: 1.3.12
       - run: bun install
-      - name: Typecheck
-        run: |
-          set +e
-          bun run typecheck 2>&1 | tee /tmp/typecheck.log
-          status=${PIPESTATUS[0]}
-          if [ "$status" -ne 0 ]; then
-            while IFS= read -r line; do
-              echo "::error title=TypeScript::$line"
-            done < /tmp/typecheck.log
-          fi
-          exit "$status"
+      - run: bun run typecheck
       - run: bun run build
